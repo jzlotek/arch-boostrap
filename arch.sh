@@ -1,12 +1,16 @@
 #!/bin/bash
-
-dialog --title "Welcome" --msgbox "This script is an automated Arch Linux bootstrapping script" 10 40
-dialog --title "Confirmation"  --yes-label "Let's GO!" --no-label "Wait... Stop" --yesno -"Please make sure that your paritions are mounted on the live disk to \'/mnt\'\n\n Ready to start?" 10 40
+dialog --title "Welcome" --msgbox "This script is an automated Arch Linux bootstrapping script\n\nAn internet connection is needed to install Arch Linux" 10 40
+dialog --title "Confirmation"  --yes-label "Let's GO!" --no-label "Wait... Stop" --yesno "Please make sure that your paritions are mounted on the live disk to '/mnt'\n\n -Ready to start?" 10 40
 
 if (( $? == 1 )); then
     dialog --title "" --msgbox "Stopped bootstrap" 10 40
     exit 1;
 fi
+
+install_pacman() {
+	dialog --title "Installing pacman Packages" --infobox "Installing \`$1\` ($n of $total). $1 $2" 5 70
+	pacman --noconfirm --needed -S "$1" >/dev/null 2>&1
+}
 
 run_in_chroot() {
     arch-chroot /mnt
@@ -21,7 +25,7 @@ run_in_chroot() {
             time_zones="$time_zones""\n""$line"
         fi
     done
-    
+
     selected_zone=$(dialog --title "Time Zone selection" --radiolist "Select your time zone" 40 80 40 $(echo $time_zones | awk -F '\n' '{ if ($1) print $1, $1, "0" }') 3>&1 1>&2 2>&3 3>&1)
 
     ln -sf /usr/share/zoneinfo/"$selected_zone" /etc/localtime
@@ -46,9 +50,9 @@ run_in_chroot() {
     proc_type="$(lscpu | grep 'vendor_id')"
 
     if [[ $(proc_type) =~ /intel/i  ]]; then
-        pacman -Sy intel-ucode grub
+        pacman -S --noconfirm --needed intel-ucode grub
     else
-        pacman -Sy amd-ucode grub
+        pacman -S --noconfirm --needed amd-ucode grub
     fi
 
     grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Arch\ Linux
