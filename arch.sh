@@ -1,12 +1,12 @@
 #!/bin/bash
 
-dialog --title "arch-bootstrap"  --yesno "Please make sure that your paritions are mounted on the live disk to \'/mnt\'\n\n Ready to start?" 10 40
+dialog --title "Welcome" --msgbox "This script is an automated Arch Linux bootstrapping script" 10 40
+dialog --title "Confirmation"  --yes-label "Let's GO!" --no-label "Wait... Stop" --yesno -"Please make sure that your paritions are mounted on the live disk to \'/mnt\'\n\n Ready to start?" 10 40
 
-if [[ $? == 1 ]]; then
-    echo "Stopping bootstrap"
+if (( $? == 1 )); then
+    dialog --title "" --msgbox "Stopped bootstrap" 10 40
     exit 1;
 fi
-
 
 run_in_chroot() {
     arch-chroot /mnt
@@ -56,8 +56,8 @@ run_in_chroot() {
     exit
 }
 
-#timedatectl set-ntp true
-run_in_chroot
+timedatectl set-ntp true
+
 dialog --title "Running pacstrap" --infobox "Please wait while pactrap is being run" 10 40
 pacstrap /mnt base base-devel dialog 1>&2
 
@@ -65,7 +65,4 @@ pacstrap /mnt base base-devel dialog 1>&2
 dialog --title "Running genfstab" --infobox "Please wait while fstab is being generated" 10 40
 genfstab -U /mnt >> /mnt/etc/fstab
 
-curl https://raw.githubusercontent.com/jzlotek/arch-bootstrap/master/archchroot.sh > /mnt/root/archchroot.sh
-chmod +x /mnt/root/archchroot.sh
-
-arch-chroot /mnt /root/archchroot.sh
+arch-chroot /mnt run_in_chroot
