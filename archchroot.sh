@@ -18,9 +18,8 @@ echo '127.0.1.1	arch.localdomain	arch' >> /etc/hosts
 passwd
 
 # check for intel/amd
-# pacman -Sy amd-ucode
-pacman -Sy intel-ucode
+# pacman -Sy amd-ucode grub
+pacman -Sy intel-ucode grub
 
-pacman -Sy grub
-
+grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Arch\ Linux
 grub-mkconfig -o /boot/grub/grub.cfg
