@@ -1,11 +1,19 @@
 #!/bin/bash
 # Author: John Zlotek
-# Version: 0.0.1
+# Version: 0.0.2
 # Usage: Lazy install script for installing Arch Linux on a new machine.
 #        Very basic right now and it might break existing system
 #        configuration if not careful.
 
 welcome() {
+    pacman -S git dialog
+    if [[ $? != 0 ]]; then
+        clear
+        echo "Are you conected to the internet?"
+        echo "Do you have sudo?"
+        exit 1
+    fi
+
     dialog --title "Welcome" --msgbox "This script is an automated Arch Linux bootstrapping script\n\nAn internet connection is needed to install Arch Linux" 10 40
     dialog --title "Confirmation"  --yes-label "Let's GO!" --no-label "Wait... Stop" --yesno "Please make sure that your paritions are mounted on the live disk to '/mnt'\n\n - Ready to start?" 10 40
 
@@ -14,6 +22,16 @@ welcome() {
         clear
         exit 1
     fi
+}
+
+partition() {
+    echo
+}
+
+partition_confirmation() {
+    dialog --title "Partitioning" --yesno "Would you like to partition your drive?" 10 40 &&\
+    (dialog --title "Confirmation"  --yes-label "Let's GO!" --no-label "Wait... Stop" --defaultno --yesno "Are you SURE?" 10 40 && partition) ||\
+    dialog --title "Cancelled" --msgbox "You cancelled the partitioning. Hopefully you mounted your drives properly to '/mnt'" 10 40
 }
 
 set_timedate() {
@@ -27,7 +45,7 @@ pactrap() {
 
 fstab_gen() {
     dialog --title "Running genfstab" --infobox "Please wait while fstab is being generated" 10 40
-    genfstab -U /mnt >> /mnt/etc/fstab 1>&2
+    genfstab -U /mnt >> /mnt/etc/fstab
 }
 
 hostname() {
@@ -45,18 +63,20 @@ hostname() {
 }
 
 install_pacman() {
-	dialog --title "Installing pacman Packages" --infobox "Installing \`$1\` ($n of $total). $1 $2" 5 70
+    dialog --title "Installing pacman Packages" --infobox "Installing \`$1\` ($n of $(($total))). \n\n - $2" 5 70
 	arch-chroot /mnt pacman --noconfirm --needed -S "$1" >/dev/null 2>&1
 }
 
 install_all_packages() {
-    packages=$(dialog --title "Select packages" --checklist "Select packages that you wish to install" 40 80 40 --file pacman.packages 3>&1 1>&2 2>&3 3>%1)
+    echo $(cat $1 | while read line; do echo "$line" | awk -F',' 'BEGIN { ORS="\n" }; {printf "%s %s 0 ", $1, $2}'; done) > /tmp/pac.tmp
+    packages=$(dialog --title "Select packages" --checklist "Select packages that you wish to install" 40 80 40 --file /tmp/pac.tmp 3>&1 1>&2 2>&3 3>&1)
 
     total=$(echo $packages | awk -F " " '{for (i=1; i<=NF; i++) print $i}' | wc -l)
 
     n=1
     echo $packages | awk -F " " '{for (i=1; i<=NF; i++) print $i}' | while read line; do
-        install_pacman $line
+        description=$(cat pacman.csv | grep "^$line," | awk -F"," '{print $2}' | sed s/\"//g)
+        install_pacman "$line" "$description"
         n=$(($n+1))
     done
 }
@@ -130,6 +150,7 @@ completed() {
 
 main_install() {
     welcome
+    partition_confirmation
     set_timedate
     pacstrap
     fstab_gen
@@ -137,10 +158,11 @@ main_install() {
     hostname
     sudo_password
     arch_keyring
-    install_all_packages
+    install_all_packages pacman.csv
     grub_install
     completed
 }
-
+install_all_packages pacman.csv
+exit
 main_install
 
