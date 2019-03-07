@@ -39,9 +39,7 @@ install_all_packages() {
     done
 }
 
-run_in_chroot() {
-    arch-chroot /mnt
-
+main_install() {
     time_zones=""
     ls /usr/share/zoneinfo | while read line; do
         if [[ -d /usr/share/zoneinfo/"$line" ]]; then
@@ -66,10 +64,12 @@ run_in_chroot() {
 
     hostname || echo 'Error creating hostname'
 
+    clear
+    echo 'Please set the root password now'
     arch-chroot /mnt passwd
 
     #refresh keyring
-    arch-chroot /mnt pacman -S archlinux-keyring
+    arch-chroot /mnt pacman -S --noconfirm --needed archlinux-keyring
     arch-chroot /mnt pacman -Syy
 
     install_all_packages
@@ -77,7 +77,7 @@ run_in_chroot() {
     # check for intel/amd
     proc_type="$(lscpu | grep 'vendor_id')"
 
-    if [[ $(proc_type) =~ /intel/i  ]]; then
+    if [[ $proc_type =~ /intel/i  ]]; then
         arch-chroot /mnt pacman -S --noconfirm --needed intel-ucode grub
     else
         arch-chroot /mnt pacman -S --noconfirm --needed amd-ucode grub
@@ -87,8 +87,6 @@ run_in_chroot() {
     arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 
     install_all_packages
-
-    exit
 }
 
 timedatectl set-ntp true
@@ -98,5 +96,7 @@ pacstrap /mnt base base-devel dialog
 
 dialog --title "Running genfstab" --infobox "Please wait while fstab is being generated" 10 40
 genfstab -U /mnt >> /mnt/etc/fstab
+
+main_install
 
 arch-chroot /mnt
