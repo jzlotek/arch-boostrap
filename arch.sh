@@ -15,7 +15,7 @@ hostname() {
         hostname=$(dialog --title "Hostname" --inputbox "Hostname cannot be blank" 10 40 "arch" 3>&1 1>&2 2>&3 3>&1)
     done
 
-    echo "$hostname" >> /etc/hostname
+    echo "$hostname" > /etc/hostname
 
     echo '127.0.0.1	localhost' >> /mnt/etc/hosts
     echo '::1		localhost' >> /mnt/etc/hosts
@@ -85,8 +85,6 @@ main_install() {
 
     arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Arch\ Linux
     arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
-
-    install_all_packages
 }
 
 timedatectl set-ntp true
