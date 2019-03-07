@@ -8,13 +8,13 @@
 welcome() {
     dialog --title "Welcome" --msgbox "This script is an automated Arch Linux bootstrapping script\n\nAn internet connection is needed to install Arch Linux" 10 40
     dialog --title "Confirmation"  --yes-label "Let's GO!" --no-label "Wait... Stop" --yesno "Please make sure that your paritions are mounted on the live disk to '/mnt'\n\n - Ready to start?" 10 40
-}
 
-if (( $? == 1 )); then
-    dialog --title "" --msgbox "Stopped bootstrap" 10 40
-    clear
-    exit 1
-fi
+    if (( $? == 1 )); then
+        dialog --title "" --msgbox "Stopped bootstrap" 10 40
+        clear
+        exit 1
+    fi
+}
 
 set_timedate() {
     timedatectl set-ntp true
