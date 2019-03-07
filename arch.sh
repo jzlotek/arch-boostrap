@@ -1,5 +1,5 @@
 #!/bin/bash
-# Author: John Zlotek
+# Author: John Zlotek (gh:jzlotek)
 # Version: 0.0.2
 # Usage: Lazy install script for installing Arch Linux on a new machine.
 #        Very basic right now and it might break existing system
