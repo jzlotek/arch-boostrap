@@ -1,12 +1,34 @@
 #!/bin/bash
-dialog --title "Welcome" --msgbox "This script is an automated Arch Linux bootstrapping script\n\nAn internet connection is needed to install Arch Linux" 10 40
-dialog --title "Confirmation"  --yes-label "Let's GO!" --no-label "Wait... Stop" --yesno "Please make sure that your paritions are mounted on the live disk to '/mnt'\n\n - Ready to start?" 10 40
+# Author: John Zlotek
+# Version: 0.0.1
+# Usage: Lazy install script for installing Arch Linux on a new machine.
+#        Very basic right now and it might break existing system
+#        configuration if not careful.
+
+welcome() {
+    dialog --title "Welcome" --msgbox "This script is an automated Arch Linux bootstrapping script\n\nAn internet connection is needed to install Arch Linux" 10 40
+    dialog --title "Confirmation"  --yes-label "Let's GO!" --no-label "Wait... Stop" --yesno "Please make sure that your paritions are mounted on the live disk to '/mnt'\n\n - Ready to start?" 10 40
+}
 
 if (( $? == 1 )); then
     dialog --title "" --msgbox "Stopped bootstrap" 10 40
     clear
     exit 1
 fi
+
+set_timedate() {
+    timedatectl set-ntp true
+}
+
+pactrap() {
+    dialog --title "Running pacstrap" --infobox "Please wait while pactrap is being run" 10 40
+    pacstrap /mnt base base-devel dialog 1>&2
+}
+
+fstab_gen() {
+    dialog --title "Running genfstab" --infobox "Please wait while fstab is being generated" 10 40
+    genfstab -U /mnt >> /mnt/etc/fstab 1>&2
+}
 
 hostname() {
     hostname=$(dialog --title "Hostname" --inputbox "Please create your system's hostname" 10 40 "arch" 3>&1 1>&2 2>&3 3>&1)
@@ -39,7 +61,7 @@ install_all_packages() {
     done
 }
 
-main_install() {
+timezone() {
     time_zones=""
     ls /usr/share/zoneinfo | while read line; do
         if [[ -d /usr/share/zoneinfo/"$line" ]]; then
@@ -61,40 +83,64 @@ main_install() {
     echo 'LANG=en_US.UTF-8' >> /mnt/etc/locale.gen
 
     arch-chroot /mnt locale-gen
+}
 
-    hostname
+sudo_password(){
 
-    clear
-    echo 'Please set the root password now'
-    arch-chroot /mnt passwd
+    p1=$(dialog --title "Sudo Password" --passwordbox "Please enter the sudo password for your system" 10 40 3>&1 1>&2 2>&3 3>&1)
+    p2=$(dialog --title "Sudo Password" --passwordbox "Please enter the password again" 10 40 3>&1 1>&2 2>&3 3>&1)
 
-    #refresh keyring
+    while [[ $p1 == "" || $p1 != $p2 ]]; do
+        p1=$(dialog --title "Sudo Password" --passwordbox "Password mismatch or was empty. Please try again" 10 40 3>&1 1>&2 2>&3 3>&1)
+        p2=$(dialog --title "Sudo Password" --passwordbox "Please enter the password again" 10 40 3>&1 1>&2 2>&3 3>&1)
+    done
+
+    (echo ${p1}; echo ${p2}) | arch-chroot /mnt passwd
+}
+
+arch_keyring() {
     arch-chroot /mnt pacman -S --noconfirm --needed archlinux-keyring
+    #refresh keyring
     arch-chroot /mnt pacman -Syy
+}
 
-    install_all_packages
-
+grub_install() {
     # check for intel/amd
     proc_type="$(lscpu | grep 'vendor_id')"
 
     if [[ $proc_type =~ /intel/i  ]]; then
-        arch-chroot /mnt pacman -S --noconfirm --needed intel-ucode grub efibootmgr
+        dialog --title "Grub Installation" --infobox "Intel Detected. Installing intel-ucode and grub" 10 40
+        arch-chroot /mnt pacman -S --noconfirm --needed intel-ucode grub efibootmgr 1>&2
+    elif [[ $proc_type =~ /amd/i ]]; then
+        dialog --title "Grub Installation" --infobox "AMD Detected. Installing amd-ucode and grub" 10 40
+        arch-chroot /mnt pacman -S --noconfirm --needed amd-ucode grub efibootmgr 1>&2
     else
-        arch-chroot /mnt pacman -S --noconfirm --needed amd-ucode grub efibootmgr
+        dialog --title "Grub Installation" --infobox "Unknown processor. Installing grub" 10 40
+        arch-chroot /mnt pacman -S --noconfirm --needed grub efibootmgr 1>&2
     fi
 
-    arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Arch\ Linux
-    arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
+    dialog --title "Grub Installation" --infobox "Configuring and installing grub to /boot" 10 40
+    arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Arch\ Linux 1>&2
+    arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg 1>&2
 }
 
-timedatectl set-ntp true
+completed() {
+    dialog --title "Install complete!" --yes-label "chroot" --no-label "Reboot" --yesno "Would you like to chroot into your new arch installation or umount and reboot?" 10 40 && (clear && arch-chroot /mnt) || (umount -R /mnt && reboot)
+}
 
-dialog --title "Running pacstrap" --infobox "Please wait while pactrap is being run" 10 40
-pacstrap /mnt base base-devel dialog
-
-dialog --title "Running genfstab" --infobox "Please wait while fstab is being generated" 10 40
-genfstab -U /mnt >> /mnt/etc/fstab
+main_install() {
+    welcome
+    set_timedate
+    pacstrap
+    fstab_gen
+    timezone
+    hostname
+    sudo_password
+    arch_keyring
+    install_all_packages
+    grub_install
+    completed
+}
 
 main_install
 
-arch-chroot /mnt
