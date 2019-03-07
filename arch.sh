@@ -62,7 +62,7 @@ main_install() {
 
     arch-chroot /mnt locale-gen
 
-    hostname || echo 'Error creating hostname'
+    hostname
 
     clear
     echo 'Please set the root password now'
@@ -78,9 +78,9 @@ main_install() {
     proc_type="$(lscpu | grep 'vendor_id')"
 
     if [[ $proc_type =~ /intel/i  ]]; then
-        arch-chroot /mnt pacman -S --noconfirm --needed intel-ucode grub
+        arch-chroot /mnt pacman -S --noconfirm --needed intel-ucode grub efibootmgr
     else
-        arch-chroot /mnt pacman -S --noconfirm --needed amd-ucode grub
+        arch-chroot /mnt pacman -S --noconfirm --needed amd-ucode grub efibootmgr
     fi
 
     arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Arch\ Linux
