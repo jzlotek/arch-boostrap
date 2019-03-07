@@ -162,7 +162,6 @@ main_install() {
     grub_install
     completed
 }
-install_all_packages pacman.csv
-exit
+
 main_install
 
