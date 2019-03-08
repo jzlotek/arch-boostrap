@@ -27,7 +27,7 @@ welcome() {
 }
 
 partition() {
-    echo
+    dialog --title "Partition" --msgbox "Partitioning is currently not availabile :)" 10 40
 }
 
 partition_confirmation() {
