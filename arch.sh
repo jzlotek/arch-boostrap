@@ -5,13 +5,15 @@
 #        Very basic right now and it might break existing system
 #        configuration if not careful.
 
+error() {
+    echo $1
+    exit 1
+}
+
 welcome() {
     pacman -S --needed --noconfirm git dialog
     if [[ $? != 0 ]]; then
-        clear
-        echo "Are you conected to the internet?"
-        echo "Do you have sudo?"
-        exit 1
+       error "Are you conected to the internet?  Do you have sudo?"
     fi
 
     dialog --title "Welcome" --msgbox "This script is an automated Arch Linux bootstrapping script\n\nAn internet connection is needed to install Arch Linux" 10 40
@@ -111,7 +113,6 @@ timezone() {
     arch-chroot /mnt hwclock --systohc
 
     echo 'en_US.UTF-8 UTF-8' >> /mnt/etc/locale.gen
-    echo 'LANG=en_US.UTF-8' >> /mnt/etc/locale.gen
 
     arch-chroot /mnt locale-gen
 }
@@ -154,20 +155,24 @@ create_user() {
 
     arch-chroot /mnt pacman -S $selected_shell 1>&2
 
+    dialog --title "Shell installation" --infobox "Setting /bin/$selected_shell as the default shell for $user" 10 40
+
     arch-chroot /mnt useradd -m -G wheel -s /bin/$selected_shell $user 1>&2
 
     set_password $user
 }
 
 arch_keyring() {
-    arch-chroot /mnt pacman -S --noconfirm --needed archlinux-keyring
-    #refresh keyring
-    arch-chroot /mnt pacman -Syy
+    dialog --title "Keyring" --infobox "Updating archlinux-keyring" 10 40
+
+    arch-chroot /mnt pacman -S --noconfirm --needed archlinux-keyring 1>&2
+
+    arch-chroot /mnt pacman -Syy 1>&2
 }
 
 grub_install() {
     # check for intel/amd
-    proc_type="$(lscpu | grep 'vendor_id')"
+    proc_type="$(arch-chroot /mnt lscpu | grep 'vendor_id')"
 
     if [[ $proc_type =~ /intel/i  ]]; then
         dialog --title "Grub Installation" --infobox "Intel Detected. Installing intel-ucode and grub" 10 40
@@ -190,18 +195,18 @@ completed() {
 }
 
 main_install() {
-    welcome
+    welcome || error "Welcome failed"
     partition_confirmation
-    set_timedate
-    pacstrap
-    fstab_gen
-    timezone
-    set_hostname
-    set_password
-    create_user
-    arch_keyring
-    install_all_packages pacman.csv
-    grub_install
+    set_timedate || error "timedatectl failed"
+    pacstrap || error "pacstrap failed. Are the partitions mounted correctly? Did formatting fail?"
+    fstab_gen || error "genfstab failed"
+    timezone || error "failed to set timezone"
+    set_hostname || error "failed to set the system hostname"
+    set_password || error "failed to set the sudo password"
+    create_user || error "failed to create user"
+    arch_keyring || error "failed to update the Arch keyring"
+    install_all_packages pacman.csv || error "failed to install packages. Does the pacman.csv file exist in this directory?"
+    grub_install || error "failed to install grub. Is your system using efi?"
     completed
 }
 
