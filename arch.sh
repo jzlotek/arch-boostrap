@@ -1,12 +1,12 @@
 #!/bin/bash
 # Author: John Zlotek (gh:jzlotek)
-# Version: 0.0.2
+# Version: 0.0.3
 # Usage: Lazy install script for installing Arch Linux on a new machine.
 #        Very basic right now and it might break existing system
 #        configuration if not careful.
 
 welcome() {
-    pacman -S git dialog
+    pacman -S --needed --noconfirm git dialog
     if [[ $? != 0 ]]; then
         clear
         echo "Are you conected to the internet?"
@@ -48,7 +48,7 @@ fstab_gen() {
     genfstab -U /mnt >> /mnt/etc/fstab
 }
 
-hostname() {
+set_hostname() {
     hostname=$(dialog --title "Hostname" --inputbox "Please create your system's hostname" 10 40 "arch" 3>&1 1>&2 2>&3 3>&1)
 
     while [[ $hostname == "" ]]; do
@@ -118,6 +118,21 @@ sudo_password(){
     (echo ${p1}; echo ${p2}) | arch-chroot /mnt passwd
 }
 
+create_user() {
+    user=$(dialog --title "User" --inputbox "Please input a name for your user" 10 40 3>&1 1>&2 2>&3 3>&1)
+    while [[ $user == "" ]]; do
+        user=$(dialog --title "User" --inputbox "User's name cannot be blank. Please try again" 10 40 3>&1 1>&2 2>&3 3>&1)
+    done
+
+    selected_shell=$(dialog --title "Shell Selection" --radiolist "Please select a default shell for your user" 20 40 10 zsh "" 0 bash "" 0 oh-my-zsh "" 0 csh "" 0 tsch "" 0 fish "" 0 3>&1 1>&2 2>&3 3>&1)
+
+    dialog --title "Shell installation" --infobox "Installing $selected_shell" 10 40
+
+    arch-chroot /mnt pacman -S $selected_shell 1>&2
+
+    arch-chroot /mnt useradd -m -G wheel -s /bin/$selected_shell $user 1>&2
+}
+
 arch_keyring() {
     arch-chroot /mnt pacman -S --noconfirm --needed archlinux-keyring
     #refresh keyring
@@ -155,13 +170,15 @@ main_install() {
     pacstrap
     fstab_gen
     timezone
-    hostname
+    set_hostname
     sudo_password
+    create_user
     arch_keyring
     install_all_packages pacman.csv
     grub_install
     completed
 }
-
+create_user
+exit
 main_install
 
