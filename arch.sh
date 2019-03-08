@@ -105,17 +105,30 @@ timezone() {
     arch-chroot /mnt locale-gen
 }
 
-sudo_password(){
+set_password(){
+    if [[ $# == 0 ]]; then
+        title="Sudo password"
+        user="sudo"
+    else
+        user="$1"
+        title="$user""'s password"
+    fi
 
-    p1=$(dialog --title "Sudo Password" --passwordbox "Please enter the sudo password for your system" 10 40 3>&1 1>&2 2>&3 3>&1)
-    p2=$(dialog --title "Sudo Password" --passwordbox "Please enter the password again" 10 40 3>&1 1>&2 2>&3 3>&1)
+    p1=$(dialog --title "$title" --passwordbox "Please enter the password for $user" 10 40 3>&1 1>&2 2>&3 3>&1)
+    p2=$(dialog --title "$title" --passwordbox "Please enter the password again" 10 40 3>&1 1>&2 2>&3 3>&1)
 
     while [[ $p1 == "" || $p1 != $p2 ]]; do
-        p1=$(dialog --title "Sudo Password" --passwordbox "Password mismatch or was empty. Please try again" 10 40 3>&1 1>&2 2>&3 3>&1)
-        p2=$(dialog --title "Sudo Password" --passwordbox "Please enter the password again" 10 40 3>&1 1>&2 2>&3 3>&1)
+        p1=$(dialog --title "$title" --passwordbox "Password mismatch or was empty. Please try again" 10 40 3>&1 1>&2 2>&3 3>&1)
+        p2=$(dialog --title "$title" --passwordbox "Please enter the password again" 10 40 3>&1 1>&2 2>&3 3>&1)
     done
 
-    (echo ${p1}; echo ${p2}) | arch-chroot /mnt passwd
+
+    if [[ $# == 0 ]]; then
+        (echo ${p1}; echo ${p2}) | arch-chroot /mnt passwd
+    else
+        (echo ${p1}; echo ${p2}) | arch-chroot /mnt passwd "$user"
+    fi
+
 }
 
 create_user() {
@@ -131,6 +144,8 @@ create_user() {
     arch-chroot /mnt pacman -S $selected_shell 1>&2
 
     arch-chroot /mnt useradd -m -G wheel -s /bin/$selected_shell $user 1>&2
+
+    set_password $user
 }
 
 arch_keyring() {
@@ -171,7 +186,7 @@ main_install() {
     fstab_gen
     timezone
     set_hostname
-    sudo_password
+    set_password
     create_user
     arch_keyring
     install_all_packages pacman.csv
