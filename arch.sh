@@ -68,16 +68,27 @@ install_pacman() {
 }
 
 install_all_packages() {
-    echo $(cat $1 | while read line; do echo "$line" | awk -F',' 'BEGIN { ORS="\n" }; {printf "%s %s 0 ", $1, $2}'; done) > /tmp/pac.tmp
+    echo $(cat $1 | while read line; do echo "$line" | awk -F',' 'BEGIN { ORS="\n" }; {printf "%s %s 0 ", $2, $3}'; done) > /tmp/pac.tmp
     packages=$(dialog --title "Select packages" --checklist "Select packages that you wish to install" 40 80 40 --file /tmp/pac.tmp 3>&1 1>&2 2>&3 3>&1)
 
     total=$(echo $packages | awk -F " " '{for (i=1; i<=NF; i++) print $i}' | wc -l)
 
     n=1
     echo $packages | awk -F " " '{for (i=1; i<=NF; i++) print $i}' | while read line; do
-        description=$(cat pacman.csv | grep "^$line," | awk -F"," '{print $2}' | sed s/\"//g)
+        package_meta=$(cat pacman.csv | grep "^\w*,$line,")
+        description=$(echo $package_meta | awk -F"," '{print $3}' | sed s/\"//g)
+        additional_packages=$(echo $package_meta | awk -F"," '{print $4}' | sed s/\"//g)
+        additional_commands=$(echo $package_meta | awk -F"," '{print $5}' | sed s/\"//g)
         install_pacman "$line" "$description"
         n=$(($n+1))
+
+        if [[ $additional_packages != "" ]]; then
+	        arch-chroot /mnt pacman --noconfirm --needed -S "$additional_packages" >/dev/null 2>&1
+        fi
+
+        if [[ $additional_commands != "" ]]; then
+	        arch-chroot /mnt $additional_commands 1>&2
+        fi
     done
 }
 
