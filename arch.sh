@@ -178,7 +178,6 @@ main_install() {
     grub_install
     completed
 }
-create_user
-exit
+
 main_install
 
