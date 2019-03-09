@@ -7,11 +7,12 @@
 
 error() {
     echo $1
+    echo "Check error.log for information about why it failed to install"
     exit 1
 }
 
 welcome() {
-    pacman -Sy --needed --noconfirm git dialog
+    pacman -Sy --needed --noconfirm git dialog >/dev/null 2>error.log
     if [[ $? != 0 ]]; then
        error "Are you conected to the internet?  Do you have sudo?"
     fi
@@ -37,17 +38,17 @@ partition_confirmation() {
 }
 
 set_timedate() {
-    timedatectl set-ntp true
+    timedatectl set-ntp true >/dev/null 2>error.log
 }
 
 run_pacstrap() {
     dialog --title "Running pacstrap" --infobox "Please wait while pactrap is being run" 10 40
-    pacstrap /mnt base base-devel dialog
+    pacstrap /mnt base base-devel dialog >/dev/null 2>error.log
 }
 
 fstab_gen() {
     dialog --title "Running genfstab" --infobox "Please wait while fstab is being generated" 10 40
-    $(genfstab -U /mnt >> /mnt/etc/fstab)
+    genfstab -U /mnt >> /mnt/etc/fstab >/dev/null 2>error.log
 }
 
 set_hostname() {
@@ -66,7 +67,7 @@ set_hostname() {
 
 install_pacman() {
     dialog --title "Installing pacman Packages" --infobox "Installing \`$1\` ($n of $(($total))). \n\n - $2" 5 70
-	arch-chroot /mnt pacman --noconfirm --needed -S "$1" >/dev/null 2>&1
+	arch-chroot /mnt pacman --noconfirm --needed -S "$1" >/dev/null 2>error.log
 }
 
 install_all_packages() {
@@ -85,11 +86,11 @@ install_all_packages() {
         n=$(($n+1))
 
         if [[ $additional_packages != "" ]]; then
-	        arch-chroot /mnt pacman --noconfirm --needed -S "$additional_packages" >/dev/null 2>&1
+	        arch-chroot /mnt pacman --noconfirm --needed -S "$additional_packages" >/dev/null 2>error.log
         fi
 
         if [[ $additional_commands != "" ]]; then
-	        arch-chroot /mnt $additional_commands 1>&2
+	        arch-chroot /mnt $additional_commands >/dev/null 2>error.log
         fi
     done
 }
@@ -99,11 +100,11 @@ timezone() {
 
     arch-chroot /mnt tzselect
 
-    arch-chroot /mnt hwclock --systohc
+    arch-chroot /mnt hwclock --systohc >/dev/null 2>error.log
 
     echo 'en_US.UTF-8 UTF-8' >> /mnt/etc/locale.gen
 
-    $(arch-chroot /mnt locale-gen)
+    arch-chroot /mnt locale-gen >/dev/null 2>error.log
 }
 
 set_password(){
@@ -125,9 +126,9 @@ set_password(){
 
 
     if [[ $# == 0 ]]; then
-        (echo ${p1}; echo ${p2}) | arch-chroot /mnt passwd
+        (echo ${p1}; echo ${p2}) | arch-chroot /mnt passwd >/dev/null 2>error.log
     else
-        (echo ${p1}; echo ${p2}) | arch-chroot /mnt passwd "$user"
+        (echo ${p1}; echo ${p2}) | arch-chroot /mnt passwd "$user" >/dev/null 2>error.log
     fi
 
 }
@@ -144,19 +145,19 @@ create_user() {
 
     dialog --title "Shell installation" --infobox "Installing $selected_shell" 10 40
 
-    $(arch-chroot /mnt pacman -S --noconfirm --needed $selected_shell)
+    arch-chroot /mnt pacman -S --noconfirm --needed $selected_shell >/dev/null 2>error.log
 
     dialog --title "Shell installation" --infobox "Setting /bin/$selected_shell as the default shell for $user" 10 40
 
-    arch-chroot /mnt useradd -m -G wheel -s /bin/$selected_shell $user
+    arch-chroot /mnt useradd -m -G wheel -s "/bin/""$selected_shell" $user >/dev/null 2>error.log
 }
 
 arch_keyring() {
     dialog --title "Keyring" --infobox "Updating archlinux-keyring" 10 40
 
-    $(arch-chroot /mnt pacman -S --noconfirm --needed archlinux-keyring)
+    arch-chroot /mnt pacman -S --noconfirm --needed archlinux-keyring >/dev/null 2>error.log
 
-    $(arch-chroot /mnt pacman -Syy 1>&2)
+    arch-chroot /mnt pacman -Syy >/dev/null 2>error.log
 }
 
 grub_install() {
@@ -175,8 +176,8 @@ grub_install() {
     fi
 
     dialog --title "Grub Installation" --infobox "Configuring and installing grub to /boot" 10 40
-    $(arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Arch\ Linux)
-    $(arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg)
+    arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Arch\ Linux >/dev/null 2>error.log
+    arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg >/dev/null 2>error.log
 }
 
 completed() {
