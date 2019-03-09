@@ -11,7 +11,7 @@ error() {
 }
 
 welcome() {
-    pacman -S --needed --noconfirm git dialog
+    pacman -Sy --needed --noconfirm git dialog
     if [[ $? != 0 ]]; then
        error "Are you conected to the internet?  Do you have sudo?"
     fi
@@ -40,14 +40,14 @@ set_timedate() {
     timedatectl set-ntp true
 }
 
-pactrap() {
+run_pacstrap() {
     dialog --title "Running pacstrap" --infobox "Please wait while pactrap is being run" 10 40
-    pacstrap /mnt base base-devel dialog 1>&2
+    $(pacstrap /mnt base base-devel dialog)
 }
 
 fstab_gen() {
     dialog --title "Running genfstab" --infobox "Please wait while fstab is being generated" 10 40
-    genfstab -U /mnt >> /mnt/etc/fstab
+    $(genfstab -U /mnt >> /mnt/etc/fstab)
 }
 
 set_hostname() {
@@ -95,26 +95,15 @@ install_all_packages() {
 }
 
 timezone() {
-    time_zones=""
-    ls /usr/share/zoneinfo | while read line; do
-        if [[ -d /usr/share/zoneinfo/"$line" ]]; then
-            ls /usr/share/zoneinfo/"$line" | while read subzone; do
-                time_zones="$time_zones""\n""$line"'/'"$subzone";
-            done
-        else
-            time_zones="$time_zones""\n""$line"
-        fi
-    done
+    clear
 
-    selected_zone=$(dialog --title "Time Zone selection" --radiolist "Select your time zone" 40 80 40 $(echo $time_zones | awk -F '\n' '{ if ($1) print $1, $1, "0" }') 3>&1 1>&2 2>&3 3>&1)
-
-    arch-chroot /mnt ln -sf /usr/share/zoneinfo/"$selected_zone" /etc/localtime
+    arch-chroot /mnt tzselect
 
     arch-chroot /mnt hwclock --systohc
 
     echo 'en_US.UTF-8 UTF-8' >> /mnt/etc/locale.gen
 
-    arch-chroot /mnt locale-gen
+    $(arch-chroot /mnt locale-gen)
 }
 
 set_password(){
@@ -149,25 +138,25 @@ create_user() {
         user=$(dialog --title "User" --inputbox "User's name cannot be blank. Please try again" 10 40 3>&1 1>&2 2>&3 3>&1)
     done
 
+    set_password $user
+
     selected_shell=$(dialog --title "Shell Selection" --radiolist "Please select a default shell for your user" 20 40 10 zsh "" 0 bash "" 0 oh-my-zsh "" 0 csh "" 0 tsch "" 0 fish "" 0 3>&1 1>&2 2>&3 3>&1)
 
     dialog --title "Shell installation" --infobox "Installing $selected_shell" 10 40
 
-    arch-chroot /mnt pacman -S $selected_shell 1>&2
+    $(arch-chroot /mnt pacman -S --noconfirm --needed $selected_shell)
 
     dialog --title "Shell installation" --infobox "Setting /bin/$selected_shell as the default shell for $user" 10 40
 
-    arch-chroot /mnt useradd -m -G wheel -s /bin/$selected_shell $user 1>&2
-
-    set_password $user
+    arch-chroot /mnt useradd -m -G wheel -s /bin/$selected_shell $user
 }
 
 arch_keyring() {
     dialog --title "Keyring" --infobox "Updating archlinux-keyring" 10 40
 
-    arch-chroot /mnt pacman -S --noconfirm --needed archlinux-keyring 1>&2
+    $(arch-chroot /mnt pacman -S --noconfirm --needed archlinux-keyring)
 
-    arch-chroot /mnt pacman -Syy 1>&2
+    $(arch-chroot /mnt pacman -Syy 1>&2)
 }
 
 grub_install() {
@@ -176,18 +165,18 @@ grub_install() {
 
     if [[ $proc_type =~ /intel/i  ]]; then
         dialog --title "Grub Installation" --infobox "Intel Detected. Installing intel-ucode and grub" 10 40
-        arch-chroot /mnt pacman -S --noconfirm --needed intel-ucode grub efibootmgr 1>&2
+        $(arch-chroot /mnt pacman -S --noconfirm --needed intel-ucode grub efibootmgr)
     elif [[ $proc_type =~ /amd/i ]]; then
         dialog --title "Grub Installation" --infobox "AMD Detected. Installing amd-ucode and grub" 10 40
-        arch-chroot /mnt pacman -S --noconfirm --needed amd-ucode grub efibootmgr 1>&2
+        $(arch-chroot /mnt pacman -S --noconfirm --needed amd-ucode grub efibootmgr)
     else
         dialog --title "Grub Installation" --infobox "Unknown processor. Installing grub" 10 40
-        arch-chroot /mnt pacman -S --noconfirm --needed grub efibootmgr 1>&2
+        $(arch-chroot /mnt pacman -S --noconfirm --needed grub efibootmgr)
     fi
 
     dialog --title "Grub Installation" --infobox "Configuring and installing grub to /boot" 10 40
-    arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Arch\ Linux 1>&2
-    arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg 1>&2
+    $(arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=Arch\ Linux)
+    $(arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg)
 }
 
 completed() {
@@ -198,7 +187,7 @@ main_install() {
     welcome || error "Welcome failed"
     partition_confirmation
     set_timedate || error "timedatectl failed"
-    pacstrap || error "pacstrap failed. Are the partitions mounted correctly? Did formatting fail?"
+    run_pacstrap || error "pacstrap failed. Are the partitions mounted correctly? Did formatting fail?"
     fstab_gen || error "genfstab failed"
     timezone || error "failed to set timezone"
     set_hostname || error "failed to set the system hostname"
