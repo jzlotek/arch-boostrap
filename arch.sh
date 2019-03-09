@@ -42,7 +42,7 @@ set_timedate() {
 
 run_pacstrap() {
     dialog --title "Running pacstrap" --infobox "Please wait while pactrap is being run" 10 40
-    $(pacstrap /mnt base base-devel dialog)
+    pacstrap /mnt base base-devel dialog
 }
 
 fstab_gen() {
