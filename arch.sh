@@ -1,6 +1,6 @@
 #!/bin/bash
 # Author: John Zlotek (gh:jzlotek)
-# Version: 0.0.3
+# Version: 0.0.4
 # Usage: Lazy install script for installing Arch Linux on a new machine.
 #        Very basic right now and it might break existing system
 #        configuration if not careful.
@@ -12,6 +12,9 @@ error() {
 }
 
 welcome() {
+    pacman-key --init >/dev/null 2>error.log
+    pacman-key --populate >/dev/null 2>error.log
+    pacman-key --refresh-keys >/dev/null 2>error.log
     pacman -Sy --needed --noconfirm git dialog >/dev/null 2>error.log
     if [[ $? != 0 ]]; then
        error "Are you conected to the internet?  Do you have sudo?"
@@ -52,17 +55,17 @@ fstab_gen() {
 }
 
 set_hostname() {
-    hostname=$(dialog --title "Hostname" --inputbox "Please create your system's hostname" 10 40 "arch" 3>&1 1>&2 2>&3 3>&1)
+    new_hostname=$(dialog --title "Hostname" --inputbox "Please create your system's hostname" 10 40 "arch" 3>&1 1>&2 2>&3 3>&1)
 
-    while [[ $hostname == "" ]]; do
-        hostname=$(dialog --title "Hostname" --inputbox "Hostname cannot be blank" 10 40 "arch" 3>&1 1>&2 2>&3 3>&1)
+    while [[ $new_hostname == "" ]]; do
+        new_hostname=$(dialog --title "Hostname" --inputbox "Hostname cannot be blank" 10 40 "arch" 3>&1 1>&2 2>&3 3>&1)
     done
 
-    echo "$hostname" > /etc/hostname
+    echo "$new_hostname" > /etc/hostname
 
     echo '127.0.0.1	localhost' >> /mnt/etc/hosts
     echo '::1		localhost' >> /mnt/etc/hosts
-    echo '127.0.1.1	'"$hostname"'.localdomain	'"$hostname" >> /mnt/etc/hosts
+    echo '127.0.1.1	'"$new_hostname"'.localdomain	'"$new_hostname" >> /mnt/etc/hosts
 }
 
 install_pacman() {
@@ -141,7 +144,7 @@ create_user() {
 
     set_password $user
 
-    selected_shell=$(dialog --title "Shell Selection" --radiolist "Please select a default shell for your user" 20 40 10 zsh "" 0 bash "" 0 oh-my-zsh "" 0 csh "" 0 tsch "" 0 fish "" 0 3>&1 1>&2 2>&3 3>&1)
+    selected_shell=$(dialog --title "Shell Selection" --radiolist "Please select a default shell for your user" 20 40 10 zsh "" 0 bash "" 0 tsch "" 0 fish "" 0 3>&1 1>&2 2>&3 3>&1)
 
     dialog --title "Shell installation" --infobox "Installing $selected_shell" 10 40
 
@@ -162,12 +165,12 @@ arch_keyring() {
 
 grub_install() {
     # check for intel/amd
-    proc_type="$(arch-chroot /mnt lscpu | grep 'vendor_id')"
+    proc_type="$(arch-chroot /mnt lscpu | grep 'Vendor Id:')"
 
-    if [[ $proc_type =~ /intel/i  ]]; then
+    if [[ $proc_type =~ '[Ii]ntel'  ]]; then
         dialog --title "Grub Installation" --infobox "Intel Detected. Installing intel-ucode and grub" 10 40
         $(arch-chroot /mnt pacman -S --noconfirm --needed intel-ucode grub efibootmgr)
-    elif [[ $proc_type =~ /amd/i ]]; then
+    elif [[ $proc_type =~ '[Aa][Mm][Dd]' ]]; then
         dialog --title "Grub Installation" --infobox "AMD Detected. Installing amd-ucode and grub" 10 40
         $(arch-chroot /mnt pacman -S --noconfirm --needed amd-ucode grub efibootmgr)
     else
