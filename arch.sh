@@ -61,7 +61,7 @@ set_hostname() {
         new_hostname=$(dialog --title "Hostname" --inputbox "Hostname cannot be blank" 10 40 "arch" 3>&1 1>&2 2>&3 3>&1)
     done
 
-    echo "$new_hostname" > /etc/hostname
+    echo "$new_hostname" > /mnt/etc/hostname
 
     echo '127.0.0.1	localhost' >> /mnt/etc/hosts
     echo '::1		localhost' >> /mnt/etc/hosts
