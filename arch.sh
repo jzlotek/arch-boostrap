@@ -127,13 +127,14 @@ set_password(){
         p2=$(dialog --title "$title" --passwordbox "Please enter the password again" 10 40 3>&1 1>&2 2>&3 3>&1)
     done
 
-
     if [[ $# == 0 ]]; then
         (echo ${p1}; echo ${p2}) | arch-chroot /mnt passwd >/dev/null 2>error.log
     else
         (echo ${p1}; echo ${p2}) | arch-chroot /mnt passwd "$user" >/dev/null 2>error.log
     fi
 
+		unset p1
+		unset p2
 }
 
 create_user() {
