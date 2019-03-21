@@ -30,8 +30,45 @@ welcome() {
     fi
 }
 
+get_valid_drives() {
+	lsblk
+}
+
 partition() {
-    dialog --title "Partition" --msgbox "Partitioning is currently not availabile :)" 10 40
+		# disabled for now until I can test on a linux box
+		exit 1
+		dialog --title "Select Format Option" --yes-label "Repartition Drives" --no-label "Select Existing Partitions" --yesno "Would you like to select existing partitions or format the drives?" 10 40
+
+		swap=""
+		boot=""
+		home=""
+		root=""
+
+		if [[ $? == 0 ]]; then
+			# repartition drives
+		fi
+
+		if [[ "$swap" != "" ]]; then
+			dialog --title "Swap" --infobox "Making swap space"
+			swapon -a "$swap" >/dev/null 2>error.log
+		fi
+
+		if [[ "$root" != "" ]]; then
+			dialog --title "Root directory" --infobox "Mounting $root to /mnt"
+			mount "$root" /mnt >/dev/null 2>error.log
+			mkdir -p /mnt/boot >/dev/null 2>error.log
+			mkdir -p /mnt/home >/dev/null 2>error.log
+		fi
+
+		if [[ "$boot" != "" ]]; then
+			dialog --title "Boot directory" --infobox "Mounting $boot to /mnt/boot"
+			mount "$boot" /mnt/boot >/dev/null 2>error.log
+		fi
+
+		if [[ "$home" != "" ]]; then
+			dialog --title "Home directory" --infobox "Mounting $home to /mnt/home"
+			mount "$home" /mnt/home >/dev/null 2>error.log
+		fi
 }
 
 partition_confirmation() {
