@@ -1,20 +1,20 @@
-,chromium,"Chromium web browser"
-,ffmpeg,"Does video converting and more"
-,firefox,"Firefox web browser"
-,fzf,"A fuzzy file finder (very useful)"
-,htop,"System viewer"
-,i3-gaps,"Window manager"
-,mpc,"Console based mpd controller"
-,mpd,"Music player daemon"
-,mpv,"Video player"
-,ncmpcpp,"Console music player"
-,neofetch,"View system information"
-,neovim,"Best text editor"
+,chromium,"Chromium web browser",,
+,ffmpeg,"Does video converting and more",,
+,firefox,"Firefox web browser",,
+,fzf,"A fuzzy file finder (very useful)",,
+,htop,"System viewer",,
+,i3-gaps,"Window manager",,
+,mpc,"Console based mpd controller",,
+,mpd,"Music player daemon",,
+,mpv,"Video player",,
+,ncmpcpp,"Console music player",,
+,neofetch,"View system information",,
+,neovim,"Best text editor",,
 ,networkmanager,"Manages network connections","nm-applet","systemctl enable NetworkManager"
-,python3,"Python3 interpreter"
-,python3-pip,"Python3 package manager"
-,ranger,"terminal file browser"
-,rxvt-unicode,"urxvt terminal emulator"
-,tmux,"Terminal multiplexer"
-,xorg-server,"Display server","xorg-init"
-,youtube-dl,"download youtube videos to your hard drive"
+,python3,"Python3 interpreter",,
+,python3-pip,"Python3 package manager",,
+,ranger,"terminal file browser",,
+,rxvt-unicode,"urxvt terminal emulator",,
+,tmux,"Terminal multiplexer",,
+,xorg-server,"Display server","xorg-init",
+,youtube-dl,"download youtube videos to your hard drive",,
