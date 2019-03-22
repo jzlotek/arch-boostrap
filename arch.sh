@@ -5,6 +5,8 @@
 #        Very basic right now and it might break your existing system
 #        configuration if not careful.
 
+PACKAGE_LOCATION='https://raw.githubusercontent.com/jzlotek/arch-bootstrap/master/pacman.csv'
+
 error() {
     echo $1
     echo "Check error.log for information about why it failed to install"
@@ -119,7 +121,7 @@ install_all_packages() {
 
     n=1
     echo $packages | awk -F " " '{for (i=1; i<=NF; i++) print $i}' | while read line; do
-        package_meta=$(cat pacman.csv | grep "^\w*,$line,")
+        package_meta=$(curl -L0 $PACKAGE_LOCATION | grep "^\w*,$line,")
         description=$(echo $package_meta | awk -F"," '{print $3}' | sed s/\"//g)
         additional_packages=$(echo $package_meta | awk -F"," '{print $4}' | sed s/\"//g)
         additional_commands=$(echo $package_meta | awk -F"," '{print $5}' | sed s/\"//g)
