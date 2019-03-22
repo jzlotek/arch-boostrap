@@ -46,6 +46,7 @@ partition() {
 
     if [[ $? == 0 ]]; then
       # repartition drives
+      echo ""
     fi
 
     if [[ "$swap" != "" ]]; then
