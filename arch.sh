@@ -2,7 +2,7 @@
 # Author: John Zlotek (gh:jzlotek)
 # Version: 0.0.4
 # Usage: Lazy install script for installing Arch Linux on a new machine.
-#        Very basic right now and it might break existing system
+#        Very basic right now and it might break your existing system
 #        configuration if not careful.
 
 error() {
@@ -31,44 +31,44 @@ welcome() {
 }
 
 get_valid_drives() {
-	lsblk
+    lsblk
 }
 
 partition() {
-		# disabled for now until I can test on a linux box
-		exit 1
-		dialog --title "Select Format Option" --yes-label "Repartition Drives" --no-label "Select Existing Partitions" --yesno "Would you like to select existing partitions or format the drives?" 10 40
+    # disabled for now until I can test on a linux box
+    exit 1
+    dialog --title "Select Format Option" --yes-label "Repartition Drives" --no-label "Select Existing Partitions" --yesno "Would you like to select existing partitions or format the drives?" 10 40
 
-		swap=""
-		boot=""
-		home=""
-		root=""
+    swap=""
+    boot=""
+    home=""
+    root=""
 
-		if [[ $? == 0 ]]; then
-			# repartition drives
-		fi
+    if [[ $? == 0 ]]; then
+      # repartition drives
+    fi
 
-		if [[ "$swap" != "" ]]; then
-			dialog --title "Swap" --infobox "Making swap space"
-			swapon -a "$swap" >/dev/null 2>error.log
-		fi
+    if [[ "$swap" != "" ]]; then
+      dialog --title "Swap" --infobox "Making swap space"
+      swapon -a "$swap" >/dev/null 2>error.log
+    fi
 
-		if [[ "$root" != "" ]]; then
-			dialog --title "Root directory" --infobox "Mounting $root to /mnt"
-			mount "$root" /mnt >/dev/null 2>error.log
-			mkdir -p /mnt/boot >/dev/null 2>error.log
-			mkdir -p /mnt/home >/dev/null 2>error.log
-		fi
+    if [[ "$root" != "" ]]; then
+      dialog --title "Root directory" --infobox "Mounting $root to /mnt"
+      mount "$root" /mnt >/dev/null 2>error.log
+      mkdir -p /mnt/boot >/dev/null 2>error.log
+      mkdir -p /mnt/home >/dev/null 2>error.log
+    fi
 
-		if [[ "$boot" != "" ]]; then
-			dialog --title "Boot directory" --infobox "Mounting $boot to /mnt/boot"
-			mount "$boot" /mnt/boot >/dev/null 2>error.log
-		fi
+    if [[ "$boot" != "" ]]; then
+      dialog --title "Boot directory" --infobox "Mounting $boot to /mnt/boot"
+      mount "$boot" /mnt/boot >/dev/null 2>error.log
+    fi
 
-		if [[ "$home" != "" ]]; then
-			dialog --title "Home directory" --infobox "Mounting $home to /mnt/home"
-			mount "$home" /mnt/home >/dev/null 2>error.log
-		fi
+    if [[ "$home" != "" ]]; then
+      dialog --title "Home directory" --infobox "Mounting $home to /mnt/home"
+      mount "$home" /mnt/home >/dev/null 2>error.log
+    fi
 }
 
 partition_confirmation() {
@@ -107,7 +107,7 @@ set_hostname() {
 
 install_pacman() {
     dialog --title "Installing pacman Packages" --infobox "Installing \`$1\` ($n of $(($total))). \n\n - $2" 5 70
-	arch-chroot /mnt pacman --noconfirm --needed -S "$1" >/dev/null 2>error.log
+	  arch-chroot /mnt pacman --noconfirm --needed -S "$1" >/dev/null 2>error.log
 }
 
 install_all_packages() {
@@ -170,8 +170,8 @@ set_password(){
         (echo ${p1}; echo ${p2}) | arch-chroot /mnt passwd "$user" >/dev/null 2>error.log
     fi
 
-		unset p1
-		unset p2
+    unset p1
+    unset p2
 }
 
 create_user() {
