@@ -33,22 +33,23 @@ welcome() {
 }
 
 get_valid_drives() {
-    lsblk
+    lsblk -lp | grep "$1" | awk '{print $1, $4}'
 }
 
 partition() {
     # disabled for now until I can test on a linux box
     exit 1
-    dialog --title "Select Format Option" --yes-label "Repartition Drives" --no-label "Select Existing Partitions" --yesno "Would you like to select existing partitions or format the drives?" 10 40
-
     swap=""
     boot=""
     home=""
     root=""
 
+    dialog --title "Select Format Option" --yes-label "Repartition Drives" --no-label "Select Existing Partitions" --yesno "Would you like to select existing partitions or format the drives?" 10 40
+
+		# lsmem | grep online | awk -F':' '{print $2}' | sed 's/ //g'
     if [[ $? == 0 ]]; then
       # repartition drives
-      echo ""
+        echo ""
     fi
 
     if [[ "$swap" != "" ]]; then
@@ -108,13 +109,31 @@ set_hostname() {
     echo '127.0.1.1	'"$new_hostname"'.localdomain	'"$new_hostname" >> /mnt/etc/hosts
 }
 
+install_yay() {
+    dialog --title "Installing yay" --infobox "Installing yay package manager via git" 5 70
+    pacman -S --needed --noconfirm git >/dev/null 2>error.log
+    rm -fr /tmp/yay
+    pwd="$PWD"
+    git clone https://aur.archlinux.org/yay.git /tmp/yay >/dev/null 2>error.log
+    cd /tmp/yay
+    sudo -u "$user" makepkg -si >/dev/null 2>error.log
+    cd "$pwd"
+    rm -fr /tmp/yay
+}
+
 install_pacman() {
     dialog --title "Installing pacman Packages" --infobox "Installing \`$1\` ($n of $(($total))). \n\n - $2" 5 70
-	  arch-chroot /mnt pacman --noconfirm --needed -S "$1" >/dev/null 2>error.log
+	  arch-chroot /mnt yay --noconfirm --needed -S "$1" >/dev/null 2>error.log
 }
 
 install_all_packages() {
-    echo $(cat $1 | while read line; do echo "$line" | awk -F',' 'BEGIN { ORS="\n" }; {printf "%s %s 0 ", $2, $3}'; done) > /tmp/pac.tmp
+    if [[ $# -eq 0 ]]; then
+        pac=$(curl -L0 "$PACKAGE_LOCATION")
+    else
+        pac="$1"
+    fi
+
+    echo $(cat "$pac" | while read line; do echo "$line" | awk -F',' 'BEGIN { ORS="\n" }; {printf "%s %s 0 ", $2, $3}'; done) > /tmp/pac.tmp
     packages=$(dialog --title "Select packages" --checklist "Select packages that you wish to install" 40 80 40 --file /tmp/pac.tmp 3>&1 1>&2 2>&3 3>&1)
 
     total=$(echo $packages | awk -F " " '{for (i=1; i<=NF; i++) print $i}' | wc -l)
@@ -129,7 +148,7 @@ install_all_packages() {
         n=$(($n+1))
 
         if [[ $additional_packages != "" ]]; then
-	        arch-chroot /mnt pacman --noconfirm --needed -S "$additional_packages" >/dev/null 2>error.log
+	        arch-chroot /mnt yay --noconfirm --needed -S "$additional_packages" >/dev/null 2>error.log
         fi
 
         if [[ $additional_commands != "" ]]; then
@@ -239,7 +258,8 @@ main_install() {
     set_password || error "failed to set the sudo password"
     create_user || error "failed to create user"
     arch_keyring || error "failed to update the Arch keyring"
-    install_all_packages pacman.csv || error "failed to install packages. Does the pacman.csv file exist in this directory?"
+    install_yay || error "failed to install yay"
+    install_all_packages || error "failed to install packages. Does the pacman.csv file exist in this directory?"
     grub_install || error "failed to install grub. Is your system using efi?"
     completed
 }
