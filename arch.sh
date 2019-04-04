@@ -14,10 +14,10 @@ error() {
 }
 
 welcome() {
+    echo "Refreshing keys. Please wait"
     pacman-key --init >/dev/null 2>error.log
     pacman-key --populate >/dev/null 2>error.log
     pacman-key --refresh-keys >/dev/null 2>error.log
-    pacman -Sy --needed --noconfirm git dialog >/dev/null 2>error.log
     if [[ $? != 0 ]]; then
        error "Are you conected to the internet?  Do you have sudo?"
     fi
@@ -86,7 +86,7 @@ set_timedate() {
 }
 
 run_pacstrap() {
-    dialog --title "Running pacstrap" --infobox "Please wait while pactrap is being run" 10 40
+    dialog --title "Running pacstrap" --infobox "Please wait while pacstrap is being run" 10 40
     pacstrap /mnt base base-devel dialog >/dev/null 2>error.log
 }
 
